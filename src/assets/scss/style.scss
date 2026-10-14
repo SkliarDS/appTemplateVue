@@ -1,0 +1,20 @@
+
+@use 'fonts';
+/* === базовые стили === */
+@use "./base/reset";
+@use "./base/vars";
+@use "./base/helpers";
+@use "./base/base";
+@use "./base/typography";
+// @use "./base/animation";
+/* === /базовые стили === */
+
+/* === Блоки ===*/
+@use './blocks/form';
+@use './blocks/btns';
+@use './blocks/swiper';
+@use './blocks/widget.min';
+@use './blocks/widget_apm';
+/* === /Блоки ===*/
+
+

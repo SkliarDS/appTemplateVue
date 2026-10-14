@@ -1,0 +1,37 @@
+.section-animation {
+  overflow: clip;
+}
+
+[data-animation-left] {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 1.5s ease-out, opacity 2s ease-out 0.5s;
+}
+[data-animation-right] {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 1.5s ease-out, opacity 2s ease-out 0.5s;
+}
+[data-animation-top] {
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 1.8s ease-out, opacity 1.8s ease-out 1s;
+}
+[data-animation-bottom] {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 1s ease-out, opacity 1.5s ease-out 0.2s;
+}
+
+.animated {
+  [data-animation-left],
+  [data-animation-right] {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+  [data-animation-top],
+  [data-animation-bottom] {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

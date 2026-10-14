@@ -1,0 +1,59 @@
+// Миксины и функции. Файл НЕ должен выводить CSS: он подключается в каждый компонент через additionalData (vite.config.js).
+// Классы — в _helpers.scss
+@use "sass:map";
+@use "sass:string";
+
+@mixin clamp($amountString) {
+    will-change: max-height;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: $amountString;
+    -webkit-box-orient: vertical;
+}
+@mixin text($col) {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 160%;
+    color: $col;
+}
+@mixin calc($property, $minsize, $maxsize) {
+    $addsize: $maxsize - $minsize;
+   #{$property}: calc(#{$minsize + px} + (#{$addsize}) * ((100vw - 320px) / (1200 - 320)));
+}
+@function rem-size($n) {
+    @return calc($n / 16) * 1rem;
+}
+@function mob-rem-size($n) {
+    @return calc($n / 12) * 1rem;
+}
+
+// Форматы исходника для миксина bg и их MIME-типы для image-set()
+$bg-mime-types: (
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+);
+
+// Фон с AVIF/WebP и запасным исходником. Рядом с исходником должны лежать .avif и .webp (npm run images)
+// $urlBg — путь без расширения: "@/assets/img/hero" или "/img/hero" (из public)
+// $ext   — формат исходника: jpg (по умолчанию), jpeg, png
+// Пример: @include bg("@/assets/img/hero", $ext: png, $posY: top);
+@mixin bg($urlBg, $posX: center, $posY: center, $size: cover, $ext: jpg) {
+    $ext: string.to-lower-case("#{$ext}");
+    @if not map.has-key($bg-mime-types, $ext) {
+        @error "bg: неподдерживаемый формат `#{$ext}`. Допустимо: #{map.keys($bg-mime-types)}";
+    }
+
+    // Порядок важен: браузер берёт последнее объявление, которое понимает
+    background-image: url("#{$urlBg}.#{$ext}");
+    background-image: -webkit-image-set(url("#{$urlBg}.webp") 1x);
+    background-image: image-set(
+        url("#{$urlBg}.avif") type("image/avif"),
+        url("#{$urlBg}.webp") type("image/webp"),
+        url("#{$urlBg}.#{$ext}") type(map.get($bg-mime-types, $ext))
+    );
+    background-repeat: no-repeat;
+    background-position: $posX $posY;
+    background-size: $size;
+}

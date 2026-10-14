@@ -1,0 +1,103 @@
+@use "./../base/breakpoints" as *;
+
+.btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	white-space: nowrap;
+	gap: 0.8rem;
+	font-weight: 400;
+	font-size: 2rem;
+	line-height: 100%;
+	text-transform: uppercase;
+	color: var(--text-inverse-100);
+	background: var(--fill-default-1);
+	border: 1px solid transparent;
+	padding: 0px 2.4rem;
+	height: 5.6rem;
+	border-radius: 3.2rem 0;
+	z-index: 1;
+	transition: var(--transition) ease-in;
+	@media (max-width: $xx) {
+		border-radius: 3rem 0;
+		padding: 0px 1.5rem;
+	}
+	@media (hover: hover) {
+		&:hover {
+			background: var(--fill-inverse-1);
+			color: var(--text-default-100);
+			border-color: currentColor;
+		}
+	}
+	&.--hover-green {
+		@media (hover: hover) {
+			&:hover {
+				background: var(--fill-accent-1-1);
+				border: 1px solid var(--fill-accent-1-1);
+			}
+		}
+	}
+	&.--icon {
+		width: 5.6rem;
+		height: 5.6rem;
+		border: 1px solid currentColor;
+		color: var(--border-inverse-1);
+		background: var(--fill-inverse-1);
+		padding: 0;
+	}
+	&.--icon-small {
+		width: 4.8rem;
+		height: 4.8rem;
+		border-radius: 2.4rem 0;
+		border: 1px solid currentColor;
+		color: var(--border-inverse-1);
+		background: var(--fill-inverse-1);
+		padding: 0;
+	}
+	&.--icon-big {
+		width: 8rem;
+		height: 8rem;
+		border: 1px solid currentColor;
+		color: var(--border-inverse-1);
+		background: var(--fill-inverse-1);
+		border-radius: 2.4rem 0;
+		padding: 0;
+	}
+	&.--big, &.--blue {
+		border-radius: var(--border-radius) 0;
+		padding: 0rem 4.8rem;
+		height: 8rem;
+		font-size: 3.2rem;
+		@media (max-width: $xx) {
+			font-size: 2rem;
+			padding: 0px 2.4rem;
+			height: 5.6rem;
+		}
+	}
+	&.--small {
+		border-radius: 2.4rem 0;
+		height: 4.8rem;
+		font-size: 1.6rem;
+	}
+	&.--border {
+		color:  var(--border-inverse-1);
+		border: 1px solid currentColor;
+		background: var(--fill-inverse-1);
+		@media (hover: hover) {
+			&:hover {
+				background: var(--fill-accent-1-1);
+				border-color: var(--fill-accent-1-1);
+			}
+		}
+	}
+
+	svg {
+		width: 2.4rem;
+		height: 2.4rem;
+
+	}
+	
+}
+

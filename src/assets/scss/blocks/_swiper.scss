@@ -1,0 +1,63 @@
+@use "./../base/breakpoints" as *;
+.pagination {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.4rem;
+}
+:deep(.swiper-pagination-bullet) {
+	border-radius: 5rem;
+	width: 1rem;
+	height: 1rem;
+	background: var(--fill-default-3);
+	cursor: pointer;
+	opacity: 1;
+	margin: 0 1px;
+}
+:deep(.swiper-pagination-bullet-active) {
+	width: 3rem;
+	background: var(--fill-default-1);
+}
+.controller {
+	width: 114%;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	z-index: 1;
+	@media (max-width: $l) {
+		width: 105%;
+	}
+}
+
+.swiper-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color:  var(--border-inverse-1);
+	border: 1px solid currentColor;
+	border-radius: 4.8rem 0;
+	width: 8rem;
+	height: 8rem;
+    cursor: pointer;
+    transition:  var(--transition) ease-in;
+	@media (hover: hover) {
+		&:hover {
+			border: 1px solid var(--fill-accent-1-1);
+			background: var(--fill-accent-1-1);
+		}
+	}
+	svg {
+		width: 4rem;
+		height: 4rem;
+	}
+	&.swiper-button-disabled {
+		opacity: 0.5;
+		border: 1px solid var(--fill-accent-1-1);
+		background: var(--fill-accent-1-1);
+		pointer-events: none
+	}
+}

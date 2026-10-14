@@ -1,0 +1,73 @@
+@use "../base/breakpoints" as *;
+.nav-icon {
+	display: none;
+	border-radius: 2.4rem 0;
+	width: 5.8rem;
+	height: 5.8rem;
+	background: var(--fill-default-1);
+	align-items: center;
+	padding: 0 10px;
+	margin-left: auto;
+	z-index: 4;
+	@media (max-width: $t) {
+		display: flex;
+	}
+	@media (max-width: $xx) {
+		width: 48px;
+		height: 48px;
+
+	}
+}
+
+.nav-icon span {
+	position: relative;
+	width: 100%;
+	height: 2px;
+	background: transparent;
+	border-radius: 3px;
+	&::before,
+	&::after {
+		content: "";
+		position: absolute;
+		width: 100%;
+		height: 2px;
+		background: #FFEBCC;
+		border-radius: 3px;
+		transition: transform 0.2s ease-in, top 0.2s linear 0.2s;
+	}
+	&::before {
+		top: -5px;
+		width: 100%;
+		@media (max-width: $xx) {
+			top: -3.5px;
+		}
+	}
+	&::after {
+		top: 5px;
+		width: 100%;
+		@media (max-width: $xx) {
+			top: 3.5px;
+		}
+	}
+}
+// при нажатии на бургер
+.nav-icon {
+	&.active {
+		span {
+			background: transparent;
+			&::before,
+			&::after {
+				
+				top: 0px;
+				width: 100%;
+				transition: top 0.2s linear, transform 0.2s ease-in 0.2s;
+			}
+			&::before {
+				transform: rotate(45deg);
+			}
+			&::after {
+				transform: rotate(-45deg);
+			}
+		}
+	}
+} 

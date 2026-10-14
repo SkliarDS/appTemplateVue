@@ -1,0 +1,24 @@
+before_script:
+  - 'which lftp || ( apt-get update -y && apt-get install lftp -y )'
+
+
+deploy_develop:
+  environment:
+    name: develop
+  only:
+    - develop # ветка, которую нужно залить на DEV. Push в нее запускает процесс - он автоматический
+  stage: deploy
+  script:
+    - lftp ftp://$FTP_USER:$FTP_PASSWORD@$FTP_SERVER -e "set ftp:ssl-allow no; mirror --continue --reverse --delete --verbose --exclude=^\.git/$ ./dist /; quit"
+
+deploy_production:
+  when: manual
+  environment:
+    name: production
+  only:
+    - main # ветка, которую нужно залить на PROD. Push в нее запускает процесс - его нужно подтверждать через Gitlab
+  stage: deploy
+  script:
+    - lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_SERVER" -e "set ftp:ssl-allow no; mirror --continue --reverse --delete --verbose --exclude=^\.git/$ ./dist /; quit"
+
+
