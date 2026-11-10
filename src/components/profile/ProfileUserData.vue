@@ -44,15 +44,6 @@ const onResend = async () => {
 						<span>{{ formatPhoneNumber(storeRequests.userData?.phone_number) }}</span>
 						<span>{{ storeRequests.userData?.email }}</span>
 					</div>
-					<div class="user-data__contacts-row">
-						<span v-if="storeRequests.userData?.legal_entity">{{ storeRequests.userData?.legal_entity?.company_name}}</span>
-						<span v-else>{{ storeRequests.userData?.workplace }}</span>
-						<span v-if="storeRequests.userData?.legal_entity">{{ storeRequests.userLegalData?.inn }}</span>
-						<span>{{ storeRequests.userData?.position }}</span>
-					</div>
-					<div class="user-data__contacts-row" v-if="storeRequests.userData?.legal_entity">
-						<span>{{ storeRequests.userLegalData?.legal_address }}</span>
-					</div>
 					<div class="user-data__contacts-socials">
 						<div class="user-data__contacts-social" v-if="storeRequests.userData?.telegram_username">
 							<svg width="20" height="20"><use href="#telegram"></use></svg>

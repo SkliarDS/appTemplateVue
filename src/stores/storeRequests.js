@@ -5,17 +5,15 @@ import { useRouter, useRoute } from "vue-router";
 import { useModals } from "@/composables/useModals";
 import { useSettingsStore } from "./storeSettings";
 import { sendMetrik } from "@/utils/metrika";
-import { sendAdriver } from '@/utils/metrika';
 import { phoneFormatter } from "@/utils/functions";
 import { API_URL, TELEGRAM_ENABLED } from "@/utils/constans";
 import { getWebApp } from "@/utils/telegram";
-import { get } from "browser-cookies";
 
 export const useRequestsStore = defineStore("request", () => {
 	const router = useRouter();
 	const route = useRoute();
 	const storeSettings = useSettingsStore();
-	const { responseOk, closeModal, openModal } = useModals();
+	const { closeModal, openModal } = useModals();
 
 	const token = ref(localStorage.getItem("token"));
 
@@ -32,29 +30,11 @@ export const useRequestsStore = defineStore("request", () => {
 	const loaderBtn = ref(false);
 	const isLoading = ref(false);
 	const userData = ref({});
-	const userLegalData = ref({});
-	const userReceiptsData = ref({});
 	const userReceiptReults = ref([]);
-	const userPrizesData = ref({});
-	const listUserPrizes = ref([]);
 	const winnersList = ref([]);
 	const responseError = ref("");
 	const isRegistrationSuccess = ref(false);
-	const suggestCityOptions = ref([]);
-	const positions = ref([]);
-	const pointsList = ref([]);
-	const pointsHasMore = ref(false);
-	const pointsLoading = ref(false);
-	const pointsOffset = ref(0);
-	const POINTS_PAGE_SIZE = 10;
-	const newsList = ref([]);
-	const userTasksList = ref([]);
-	const qrImage = ref("");
-	const referralUserData = ref({});
-	const pointsAmount = ref(0);
-	const taskName = ref('');
 	const isAuthenticated = computed(() => !!token.value);
-	const isApprovedChecksCount = computed(() => userData.value?.approved_checks_count >= 1);
 	const isMobile = computed(() => storeSettings.widthWindow <= 576);
 	const _isTelegramApp = !!getWebApp()?.initData;
 	const isTelegramPage = computed(() => TELEGRAM_ENABLED && (_isTelegramApp || route.path?.includes("webview")));
@@ -123,7 +103,7 @@ export const useRequestsStore = defineStore("request", () => {
 			formData.append("is_rules", data.rules);
 			formData.append("agree_to_advertising", data.agreeToAdvertising);
 
-			const res = await axios.post(`${API_URL}/api/users/registration`, formData, {
+			 await axios.post(`${API_URL}/api/users/registration`, formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},
@@ -183,10 +163,6 @@ export const useRequestsStore = defineStore("request", () => {
 			setAuthHeader();
 			const res = await axios.get(`${API_URL}/api/users/me`);
 			userData.value = res.data;
-			if(userData.value.legal_entity) {
-				await getLegalEntity();
-			}
-			await getPoints(true);
 		} catch (error) {
 			if (error.response && error.response.status === 401) {
 				console.warn("Пользователь не авторизован");
@@ -244,7 +220,7 @@ export const useRequestsStore = defineStore("request", () => {
 			phone_number: data.phone || phoneFormatter(phoneQuery.value),
 		};
 		try {
-			const res = await axios.post(`${API_URL}/api/users/recovery-password`, parameters);
+			await axios.post(`${API_URL}/api/users/recovery-password`, parameters);
 			sendMetrik("reachGoal", "forget");
 			openModal("sentNewPassword");
 		} catch (error) {
@@ -263,7 +239,7 @@ export const useRequestsStore = defineStore("request", () => {
 		loaderBtn.value = true;
 		try {
 			setAuthHeader();
-			const res = await axios.put(`${API_URL}/api/users/me`, parameters);
+			await axios.put(`${API_URL}/api/users/me`, parameters);
 			await userInfo();
 			setTimeout(() => {
 				closeModal("responseText");
@@ -306,337 +282,6 @@ export const useRequestsStore = defineStore("request", () => {
 		}
 	};
 
-	const getLegalEntity = async () => {
-		try {
-			let url = `${API_URL}/api/users/me/legal-entity`;
-			const { data } = await axios.get(url);
-			userLegalData.value = data;
-		} catch (error) {
-			console.log("Error getLegalEntity:", error.response.data.detail);
-		}
-	};
-
-	const getReferralQr = async () => {
-		try {
-			setAuthHeader();
-			if (qrImage.value) {
-				URL.revokeObjectURL(qrImage.value);
-				qrImage.value = "";
-			}
-			const { data } = await axios.get(`${API_URL}/api/users/me/referral-qr`, {
-				responseType: "blob",
-				params: { _t: Date.now() },
-			});
-			qrImage.value = URL.createObjectURL(data);
-		} catch (error) {
-			console.log("Error getReferralQr:", error);
-		}
-	};
-
-	const getReferral = async () => {
-		try {
-			setAuthHeader();
-			let url = `${API_URL}/api/users/me/referral`;
-			const { data } = await axios.get(url);
-			referralUserData.value = data;
-		} catch (error) {
-			console.log("Error getReferral:", error);
-		}
-	};
-
-	const getPoints = async (reset = false) => {
-		if (pointsLoading.value) return;
-		if (reset) {
-			pointsList.value = [];
-			pointsOffset.value = 0;
-			pointsHasMore.value = false;
-		}
-		try {
-			setAuthHeader();
-			pointsLoading.value = true;
-			const [pointsRes, userRes] = await Promise.all([
-				axios.get(`${API_URL}/api/points/history/?limit=${POINTS_PAGE_SIZE}&offset=${pointsOffset.value}`),
-				axios.get(`${API_URL}/api/users/me`),
-			]);
-			pointsList.value = [...pointsList.value, ...pointsRes.data.results];
-			pointsOffset.value += pointsRes.data.results.length;
-			pointsHasMore.value = !!pointsRes.data.next;
-			userData.value = { ...userData.value, ...userRes.data };
-		} catch (error) {
-			console.log("getPoints:", error);
-		} finally {
-			pointsLoading.value = false;
-		}
-	};
-
-	const getTasks = async () => {
-		try {
-			let url = `${API_URL}/api/assignments/public/`;
-			let allResults = [];
-			while (url) {
-				const { data } = await axios.get(url);
-				allResults = [...allResults, ...data.results];
-				url = data.next;
-			}
-			return allResults;
-		} catch (error) {
-			console.log("getTasks:", error);
-		}
-	};
-
-	const getUserTasks = async () => {
-		try {
-			let url = `${API_URL}/api/assignments/`;
-			let allResults = [];
-			while (url) {
-				const { data } = await axios.get(url);
-				allResults = [...allResults, ...data.results];
-				url = data.next;
-			}
-			userTasksList.value = allResults;
-			return allResults;
-		} catch (error) {
-			console.log("getTasks:", error);
-		}
-	};
-
-	const getWelcomeTask = async () => {
-		try {
-			setAuthHeader();
-			const { data } = await axios.get(`${API_URL}/api/welcome-task/`);
-			return data;
-		} catch (error) {
-			console.log("getWelcomeTask:", error.response?.data?.detail);
-		}
-	};
-
-	const subsribeTask = async (id) => {
-		loaderBtn.value = true;
-		try {
-			setAuthHeader();
-			const { data } = await axios.post(`${API_URL}/api/assignments/${id}/sms-subscribe/`);
-			openModal("responseText", { 
-				content: {
-					title: 'Запрос отправлен',
-					text: 'Когда задание станет доступным, на указанный при регистрации номер будет отправлено СМС-уведомление о старте',
-				}
-			});
-			return data;
-		} catch (error) {
-			console.log("subsribeTask:", error.response?.data?.detail);
-			openModal("responseText", { 
-				content: {
-					text: `${error.response?.data?.detail}`,
-				}
-			});
-		} finally {
-			loaderBtn.value = false;
-		}
-	};
-
-	const unsubscribeTask = async (id) => {
-		loaderBtn.value = true;
-		try {
-			setAuthHeader();
-			const { data } = await axios.delete(`${API_URL}/api/assignments/${id}/sms-subscribe/`);
-			openModal("responseText", { 
-				content: {
-					text: 'Вы успешно отписались от СМС рассылки.',
-				}
-			});
-			return data;
-		} catch (error) {
-			console.log("unsubscribeTask:", error.response?.data?.detail);
-			openModal("responseText", { 
-				content: {
-					text: `${error.response?.data?.detail}`,
-				}
-			});
-		} finally {
-			loaderBtn.value = false;
-		}
-	};
-
-	const getTasksDetail = async (id) => {
-		isLoading.value = true;
-		try {
-			let url = `${API_URL}/api/assignments/${id}/`;				
-			const { data } = await axios.get(url);		
-			pointsAmount.value = data.points_amount;
-			taskName.value = data.task_name;
-			return data;
-		} catch (error) {
-			console.log("getNewsDetail:", error);
-			openModal("responseText", { 
-				content: {
-					text: 'Что-то пошло не так, попробуйте еще раз или обратитесь в службу поддержки.',
-				}
-			});
-		} finally {
-			isLoading.value = false;
-		}
-	};
-
-	const submitTasksDetail = async (id, type, { message = "", files = [] } = {}) => {
-		loaderBtn.value = true;
-		const parameters = {
-			message,
-			files,
-		}
-		try {
-			const formData = new FormData();
-
-			if (parameters.files && parameters.files.length > 0 && type === 'photo') {
-				for (const file of parameters.files) {
-					formData.append("files", file);
-				}
-			}
-
-			if (parameters.message && parameters.message.trim().length > 0) {
-				formData.append("message", parameters.message.trim());
-			}
-
-			let url = `${API_URL}/api/assignments/${id}/submit/`;				
-			await axios.post(url, formData, {
-				headers: {
-					"Content-Type": "multipart/form-data",
-				},
-			});		
-			await getUserTasks();
-			await getPoints(true);
-			console.log('tast:',);
-			openModal("responseText", {
-				content: {
-					title: 'Задание успешно отправлено!',
-					text: 'Баллы будут начислены после прохождения модерации. Проверка может занять до 3 рабочих дней',
-				}
-			});
-		} catch (error) {
-			console.log("getNewsDetail:", error);
-			responseError.value = error.response?.data?.detail || "Ошибка при отправке данных.";
-		} finally {
-			loaderBtn.value = false;
-		}
-	};
-
-	const getSurveysActive = async () => {
-		isLoading.value = true;
-		try {
-			let url = `${API_URL}/api/surveys/active/`;				
-			const { data } = await axios.get(url);		
-			data.amount = pointsAmount.value;
-			data.name = taskName.value;
-			return data;
-		} catch (error) {
-			console.log("getNewsDetail:", error);
-		} finally {
-			isLoading.value = false;
-		}
-	};
-
-	const submitSurveys = async (id, answers) => {
-		loaderBtn.value = true;
-		const parameters = {
-			answers:answers
-		}
-		try {
-			let url = `${API_URL}/api/surveys/${id}/submit/`;				
-			await axios.post(url, parameters);	
-			await getUserTasks();
-			await getPoints(true);
-			openModal("responseText", {
-				content: {
-					title: 'Опрос успешно отправлен!',
-					text: 'Вам начислено ' + pointsAmount.value + ' баллов',
-				}
-			});
-		} catch (error) {
-			console.log("getNewsDetail:", error);
-			responseError.value = error.response?.data?.detail || "Ошибка при отправке данных.";
-		} finally {
-			loaderBtn.value = false;
-			
-		}
-	};
-
-	const getNews = async (type='news') => {
-		try {
-			let url = `${API_URL}/api/news/`;
-			let allResults = [];
-			const params = {
-				type: type
-			}
-			while (url) {
-				const { data } = await axios.get(url, { params });
-				allResults = [...allResults, ...data.results];
-				url = data.next;
-			}
-			return allResults;
-		} catch (error) {
-			console.log("getNews:", error);
-		}
-	};
-	
-	const getNewsDetail = async (id) => {
-		try {
-			let url = `${API_URL}/api/news/${id}/`;				
-			const { data } = await axios.get(url);		
-			return data;
-		} catch (error) {
-			console.log("getNewsDetail:", error);
-			openModal("responseText", { 
-				content: {
-					text: 'Что-то пошло не так, попробуйте еще раз или обратитесь в службу поддержки.',
-				}
-			});
-		}
-	};
-	
-	const getKnowledge = async (type) => {
-		try {
-			setAuthHeader();
-			let url = `${API_URL}/api/knowledge/content/`;
-			let allResults = [];
-			const params = {
-				content_type: type
-			}
-			while (url) {
-				const { data } = await axios.get(url, { params });
-				allResults = [...allResults, ...data.results];
-				url = data.next;
-			}
-
-			return allResults.filter(item => {
-				if (userData.value.legal_entity !== null) {
-					return item.access_level === 'basic';
-				} else {
-					return item;
-				}
-			});
-		} catch (error) {
-			console.error("Error getCollections:", error);
-		}
-	};
-
-	const getKnowledgeDetail = async (id) => {
-		isLoading.value = true;
-		try {
-			setAuthHeader();
-			let url = `${API_URL}/api/knowledge/content/${id}/`;				
-			const { data } = await axios.get(url);		
-			return data;
-		} catch (error) {
-			console.log("getKnowledgeDetail:", error);
-			openModal("responseText", { 
-				content: {
-					text: 'Что-то пошло не так, попробуйте еще раз или обратитесь в службу поддержки.',
-				}
-			});
-		} finally {
-			isLoading.value = false;
-		}
-	};
-
 	const getPrizes = async (user_type, category) => {
 		try {
 			let url = `${API_URL}/api/prizes/`;
@@ -655,30 +300,6 @@ export const useRequestsStore = defineStore("request", () => {
 		}
 	};
 
-	const exchangePoints = async (id) => {
-		loaderBtn.value = true;
-		try {
-			setAuthHeader();
-			const { data } = await axios.post(`${API_URL}/api/prizes/${id}/exchange/`);
-			openModal("responseText", {
-				content: {
-					text: 'Вы успешно обменяли баллы на приз! Информация о получении отправлена на ваш email',
-				}
-			});
-			await getPoints(true);
-			prizesRefreshKey.value++;
-			return data;
-		} catch (error) {
-			console.log("Error exchangePoints:", error);
-			openModal("responseText", { 
-				content: {
-					text: `${error.response?.data?.detail}`,
-				}
-			});
-		} finally {
-			loaderBtn.value = false;
-		}
-	}
 
 	const userPrizes = async (offset = 0, limit = 1000) => {
 		try {
@@ -692,48 +313,7 @@ export const useRequestsStore = defineStore("request", () => {
 		}
 	};
 
-	const prizesRefreshKey = ref(0);
-	const isChangedPrize = ref(false);
-	const getInn = async (inn) => {
-		responseError.value = 'Проверяем ИНН...';
-		try {
-			setAuthHeader();
-			const { data } = await axios.get(`${API_URL}/api/users/inn-lookup`, { params: { inn }});	
-			return data;
-		} catch (error) {
-			console.log(" getInn:", error);
-		} finally {
-			// responseError.value = '';
-		}
-	}
 
-	// data: { inn }
-	const transferToLegalEntity = async (data, confirmed) => {
-		loaderBtn.value = true;
-		try {
-			setAuthHeader();
-			const { data } = await axios.post(`${API_URL}/api/users/me/legal-entity`, { 
-				inn : data.inn,
-  				confirmed : confirmed
-			});	
-			userLegalData.value = data;
-			await userInfo();
-			if (isTelegramPage.value) {
-				getWebApp()?.close();
-			} else {
-				openModal("responseText", {
-					content: {
-						text: 'Данные о вашем заведении успешно отправлены. Ваш профиль переведён в статус юридического лица',
-					}
-				});
-			}
-		} catch (error) {
-			console.log(" getInn:", error);
-			responseError.value = error.response?.data?.detail || "Ошибка при отправке данных. Проверьте инн и повторите попытку.";
-		} finally {
-			loaderBtn.value = false;
-		}
-	}
 
 	const offsetReceipt = ref(0);
 	let limitReceipt;
@@ -755,17 +335,6 @@ export const useRequestsStore = defineStore("request", () => {
 		// возвращаем массив, отсортированный по дате (новые сверху)
 		return Array.from(map.values()).sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date));
 	};
-
-	const putRecieptInListReceipts = async () => {
-		try {
-			const res = await axios.get(`${API_URL}/api/quiz/user/receipts?limit=1000`);
-			const results = res.data?.results || [];
-			userReceiptsData.value = res.data;
-			userReceiptReults.value = mergeReceipts(userReceiptReults.value, results);
-		} catch (error) {
-			console.log("putRecieptInListReceipts error:", error);
-		}
-	};	
 
 	const userReceipts = async () => {
 		if (loading.value || allLoaded.value) return;
@@ -829,38 +398,6 @@ export const useRequestsStore = defineStore("request", () => {
 		} finally {
 			loadingPrize.value = false;
 		}
-	};
-
-	const getSuggestCity = async (value) => {
-		try {
-			
-			const params = {
-				query: value
-			}
-			let url = `${API_URL}/api/users/suggest-city`;
-			const { data } = await axios.get(url, { params });
-
-			suggestCityOptions.value = data.suggestions.filter(item => item.city);
-		} catch (error) {
-			console.log("getSuggestCity error:", error);
-		} 
-	};
-
-	const getPositions = async () => {
-		try {
-			
-			let url = `${API_URL}/api/users/positions`;
-			const { data } = await axios.get(url);
-
-			positions.value = data.map((item , index) => {
-				return {
-					id: index,
-					title: item.name
-				}
-			});
-		} catch (error) {
-			console.log("getSuggestCity error:", error);
-		} 
 	};
 
 	const offsetPrizeChange = () => {
@@ -930,15 +467,8 @@ export const useRequestsStore = defineStore("request", () => {
 
 	const logout = async () => {
 		removeToken();
-		if (qrImage.value) {
-			URL.revokeObjectURL(qrImage.value);
-			qrImage.value = "";
-		}
 		userData.value = {};
-		referralUserData.value = {};
-		userReceiptsData.value = {};
 		userReceiptReults.value = [];
-		listUserPrizes.value = [];
 		router.push({ name: "home" });
 		localStorage.removeItem("ref");
 		localStorage.removeItem("registration_params");
@@ -958,45 +488,20 @@ export const useRequestsStore = defineStore("request", () => {
 		userReceipts,
 		showMoreReceipts,
 		userPrizes,
-		getInn,
 		changeUserProfile,
 		changeUserPassword,
 		topics,
 		feedback,
 		updateWinnings,
 		getWinnings,
-		getSuggestCity,
 		offsetPrizeChange,
-		getLegalEntity,
-		getKnowledge,
 		getPrizes,
-		getPositions,
-		getReferralQr,
-		getReferral,
-		getNews,
-		getNewsDetail,
-		getTasks,
-		getTasksDetail,
-		submitTasksDetail,
-		getSurveysActive,
-		submitSurveys,
-		getWelcomeTask,
-		getUserTasks,
-		subsribeTask,
-		unsubscribeTask,
-		getKnowledgeDetail,
-		exchangePoints,
-		transferToLegalEntity,
 		setToken,
 
 		isAuthenticated,
 		loaderBtn,
 		userData,
-		userTasksList,
 		userReceiptReults,
-		userReceiptsData,
-		userPrizesData,
-		listUserPrizes,
 		responseError,
 		allLoaded,
 		loading,
@@ -1004,21 +509,8 @@ export const useRequestsStore = defineStore("request", () => {
 		allLoadedPrize,
 		loadingPrize,
 		winnersList,
-		isApprovedChecksCount,
-		isChangedPrize,
 		isRegistrationSuccess,
-		suggestCityOptions,
-		positions,
-		userLegalData,
-		pointsList,
-		pointsHasMore,
-		pointsLoading,
-		getPoints,
-		prizesRefreshKey,
-		qrImage,
-		referralUserData,
 		isLoading,
 		isTelegramPage,
-		phoneQuery,
 	};
 });
